@@ -103,6 +103,80 @@ def _english_predictions(prefix):
         return []
 
 
+def _focus_target():
+    import ctypes, time
+    target = get_last_target() or ctypes.windll.user32.GetForegroundWindow()
+    if not target:
+        return
+    try:
+        current_thread = ctypes.windll.kernel32.GetCurrentThreadId()
+        fg_hwnd = ctypes.windll.user32.GetForegroundWindow()
+        fg_thread = ctypes.windll.user32.GetWindowThreadProcessId(fg_hwnd, None)
+        ctypes.windll.user32.AttachThreadInput(current_thread, fg_thread, True)
+        ctypes.windll.user32.AllowSetForegroundWindow(-1)
+        ctypes.windll.user32.SetForegroundWindow(target)
+        ctypes.windll.user32.AttachThreadInput(current_thread, fg_thread, False)
+        time.sleep(0.08)
+    except Exception as e:
+        print(f"[KEYBOARD] Focus error: {e}")
+
+
+def _send_vk(vk):
+    import ctypes, time
+
+    class KI(ctypes.Structure):
+        _fields_ = [
+            ("wVk", ctypes.c_ushort),
+            ("wScan", ctypes.c_ushort),
+            ("dwFlags", ctypes.c_ulong),
+            ("time", ctypes.c_ulong),
+            ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong)),
+        ]
+
+    class INP(ctypes.Structure):
+        _fields_ = [("type", ctypes.c_ulong), ("ki", KI)]
+
+    for flags in (0, 0x0002):
+        i = INP()
+        i.type = 1
+        i.ki.wVk = vk
+        i.ki.wScan = 0
+        i.ki.dwFlags = flags
+        i.ki.dwExtraInfo = None
+        ctypes.windll.user32.SendInput(1, ctypes.byref(i), ctypes.sizeof(INP))
+        time.sleep(0.05)
+
+
+def _send_key_unicode(char):
+    import ctypes, time
+
+    KEYEVENTF_UNICODE = 0x0004
+    KEYEVENTF_KEYUP = 0x0002
+
+    class KI(ctypes.Structure):
+        _fields_ = [
+            ("wVk", ctypes.c_ushort),
+            ("wScan", ctypes.c_ushort),
+            ("dwFlags", ctypes.c_ulong),
+            ("time", ctypes.c_ulong),
+            ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong)),
+        ]
+
+    class INP(ctypes.Structure):
+        _fields_ = [("type", ctypes.c_ulong), ("ki", KI)]
+
+    code = ord(char)
+    for flags in (KEYEVENTF_UNICODE, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP):
+        i = INP()
+        i.type = 1
+        i.ki.wVk = 0
+        i.ki.wScan = code
+        i.ki.dwFlags = flags
+        i.ki.dwExtraInfo = None
+        ctypes.windll.user32.SendInput(1, ctypes.byref(i), ctypes.sizeof(INP))
+        time.sleep(0.02)
+
+
 class VirtualKeyboard:
     def __init__(self, toolbar_instance=None):
         self.root = tk.Toplevel()
@@ -309,20 +383,15 @@ class VirtualKeyboard:
 
         # Step 4 — register each keyboard key
         for key in self._keys:
-            screen_x = root_x + key["canvas_x"]
-            screen_y = root_y + key["canvas_y"]
-
-            def make_callback(char):
-                def callback():
-                    self._type_character(char)
-                return callback
+            sx = root_x + key["canvas_x"]
+            sy = root_y + key["canvas_y"]
 
             dwell_engine.register_target(
-                screen_x,
-                screen_y,
+                sx,
+                sy,
                 key["width"],
                 key["height"],
-                make_callback(key["char"]),
+                (lambda c=key["char"]: lambda: self._type_character(c))(),
                 name=f"key:{key['char']}",
             )
 
@@ -334,104 +403,25 @@ class VirtualKeyboard:
         self._register_all_targets_after_show()
 
     def _type_character(self, char):
-        """Type a character using Windows API."""
         def do_type():
-            import ctypes
-            import ctypes.wintypes
-            import time
-            
-            # Always get a valid target window
-            target = get_last_target() or ctypes.windll.user32.GetForegroundWindow()
-
-            if target:
-                current_thread = ctypes.windll.kernel32.GetCurrentThreadId()
-                fg_hwnd = ctypes.windll.user32.GetForegroundWindow()
-                fg_thread = ctypes.windll.user32.GetWindowThreadProcessId(fg_hwnd, None)
-                ctypes.windll.user32.AttachThreadInput(current_thread, fg_thread, True)
-                ctypes.windll.user32.AllowSetForegroundWindow(-1)
-                ctypes.windll.user32.SetForegroundWindow(target)
-                ctypes.windll.user32.AttachThreadInput(current_thread, fg_thread, False)
-                time.sleep(0.05)
-
-            # Define input structures
-            class KI(ctypes.Structure):
-                _fields_ = [
-                    ("wVk", ctypes.c_ushort),
-                    ("wScan", ctypes.c_ushort),
-                    ("dwFlags", ctypes.c_ulong),
-                    ("time", ctypes.c_ulong),
-                    ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong))
-                ]
-                
-            class INP(ctypes.Structure):
-                _fields_ = [("type", ctypes.c_ulong), ("ki", KI)]
-
-            # Handle different key types
+            _focus_target()
             if char == "⌫":
-                # Backspace
-                def fire_vk(vk, flags):
-                    i = INP()
-                    i.type = 1
-                    i.ki.wVk = vk
-                    i.ki.dwFlags = flags
-                    i.ki.dwExtraInfo = None
-                    ctypes.windll.user32.SendInput(1, ctypes.byref(i), ctypes.sizeof(INP))
-                
-                fire_vk(0x08, 0)
-                time.sleep(0.05)
-                fire_vk(0x08, 0x0002)
-                
+                _send_vk(0x08)
+                if self._input_buffer:
+                    self._input_buffer = self._input_buffer[:-1]
             elif char == "↵":
-                # Enter
-                def fire_vk(vk, flags):
-                    i = INP()
-                    i.type = 1
-                    i.ki.wVk = vk
-                    i.ki.dwFlags = flags
-                    i.ki.dwExtraInfo = None
-                    ctypes.windll.user32.SendInput(1, ctypes.byref(i), ctypes.sizeof(INP))
-                
-                fire_vk(0x0D, 0)
-                time.sleep(0.05)
-                fire_vk(0x0D, 0x0002)
-                
+                _send_vk(0x0D)
+                self._input_buffer = ""
             elif char == " ":
-                # Space
-                def fire_vk(vk, flags):
-                    i = INP()
-                    i.type = 1
-                    i.ki.wVk = vk
-                    i.ki.dwFlags = flags
-                    i.ki.dwExtraInfo = None
-                    ctypes.windll.user32.SendInput(1, ctypes.byref(i), ctypes.sizeof(INP))
-                
-                fire_vk(0x20, 0)
-                time.sleep(0.05)
-                fire_vk(0x20, 0x0002)
-                
+                _send_vk(0x20)
+                self._input_buffer = ""
             else:
-                # All other characters - use Unicode
-                KEYEVENTF_UNICODE = 0x0004
-                KEYEVENTF_KEYUP = 0x0002
-
-                def fire_unicode(scan, flags):
-                    i = INP()
-                    i.type = 1
-                    i.ki.wVk = 0
-                    i.ki.wScan = scan
-                    i.ki.dwFlags = flags
-                    i.ki.dwExtraInfo = None
-                    ctypes.windll.user32.SendInput(1, ctypes.byref(i), ctypes.sizeof(INP))
-                
-                # Type each character
-                for ch in char:
-                    code = ord(ch)
-                    fire_unicode(code, KEYEVENTF_UNICODE)
-                    time.sleep(0.02)
-                    fire_unicode(code, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP)
-                    time.sleep(0.02)
-
-            print(f"[KEYBOARD] Typed: {char}")
+                _send_key_unicode(char)
+                if len(char) == 1 and char.isalpha() and self._lang == "EN":
+                    self._input_buffer += char.lower()
+                elif self._lang in ("HI", "MR"):
+                    self._input_buffer += char
+            print(f"[KEYBOARD] Typed: {repr(char)}")
 
         threading.Thread(target=do_type, daemon=True).start()
 

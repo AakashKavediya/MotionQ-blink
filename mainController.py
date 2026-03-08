@@ -130,7 +130,7 @@ def main(profile_name):
     
     # Position toolbar at top center
     toolbar_ui.root.update_idletasks()
-    toolbar_width = 700
+    toolbar_width = 1000
     toolbar_x = (screen_w - toolbar_width) // 2
     toolbar_ui.root.geometry(f"{toolbar_width}x40+{toolbar_x}+0")
     

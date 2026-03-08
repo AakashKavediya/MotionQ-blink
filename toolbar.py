@@ -51,7 +51,7 @@ class Toolbar:
             self.root,
             bg="#2d2d2d",
             highlightthickness=0,
-            width=900,
+            width=1000,
             height=40,
         )
         self._canvas.pack(fill=tk.BOTH, expand=True)
@@ -67,11 +67,11 @@ class Toolbar:
             ("Scroll Up", self._on_scroll_up, None),
             ("Scroll Down", self._on_scroll_down, None),
             ("Click", self._on_click, 800),
-            ("Double Click", self._on_double_click, 800),
+            ("Dbl Click", self._on_double_click, 800),
             ("Exit", self._on_exit, 2000),
         ]
         
-        btn_w, btn_h = 80, 32
+        btn_w, btn_h = 76, 32
         pad = 4
         x = pad
         
@@ -244,8 +244,10 @@ class Toolbar:
             fill = "#3d3d3d"  # Default gray
             if label == "Click" and mode == "single":
                 fill = "#00aa00"  # Green when click mode ON
-            elif label == "Double Click" and mode == "double":
+            elif label == "Dbl Click" and mode == "double":
                 fill = "#cc6600"  # Orange when double-click mode ON
+            if label == "Exit":
+                fill = "#8b0000"  # Dark red for Exit
             
             # Draw button rectangle
             self._canvas.create_rectangle(x, y, x + w, y + h, fill=fill, outline="#555")
@@ -263,14 +265,12 @@ class Toolbar:
         self.root.update_idletasks()
         self.root.update()
         
-        pad = 4
         for item in self._key_regions:
-            label, lx, ly, lw, lh, cb = item[0], item[1], item[2], item[3], item[4], item[5]
-            duration_ms = item[6] if len(item) > 6 else None
+            label, lx, ly, lw, lh, cb, duration_ms = item
             
             # Calculate absolute screen coordinates
-            screen_x = self.root.winfo_rootx() + pad + lx
-            screen_y = self.root.winfo_rooty() + pad + ly
+            screen_x = self.root.winfo_rootx() + lx
+            screen_y = self.root.winfo_rooty() + ly
             
             # Register with dwell engine
             dwell_engine.register_target(
