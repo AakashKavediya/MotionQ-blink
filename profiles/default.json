@@ -1,0 +1,95 @@
+{
+  "gaze": {
+    "calibration_points": [
+      {
+        "iris": [
+<<<<<<< HEAD
+          0.45513085648417473,
+          0.7673842757940292
+=======
+          0.48202768713235855,
+          0.6183218061923981
+        ],
+        "screen": [
+          0.5,
+          0.5
+        ]
+      },
+      {
+        "iris": [
+          0.4999311715364456,
+          0.6099097430706024
+        ],
+        "screen": [
+          0.2,
+          0.2
+        ]
+      },
+      {
+        "iris": [
+          0.6014924421906471,
+          0.6170186847448349
+>>>>>>> b2ba781 (Initial commit of MotionQ backend with dwell and keyboard updates)
+        ],
+        "screen": [
+          0.8,
+          0.2
+        ]
+      },
+      {
+        "iris": [
+<<<<<<< HEAD
+          0.44477150961756706,
+          0.8628295958042145
+=======
+          0.5143676847219467,
+          0.6359619796276093
+>>>>>>> b2ba781 (Initial commit of MotionQ backend with dwell and keyboard updates)
+        ],
+        "screen": [
+          0.2,
+          0.8
+        ]
+      },
+      {
+        "iris": [
+<<<<<<< HEAD
+          0.31609063781797886,
+          0.743073545396328
+=======
+          0.5338753387331963,
+          0.640658900141716
+>>>>>>> b2ba781 (Initial commit of MotionQ backend with dwell and keyboard updates)
+        ],
+        "screen": [
+          0.8,
+          0.8
+        ]
+      }
+    ],
+    "screen_width": 1920,
+    "screen_height": 1080
+  },
+  "head": {
+<<<<<<< HEAD
+    "neutral_y": 415.7052596231525,
+=======
+    "neutral_y": 356.82882235600397,
+>>>>>>> b2ba781 (Initial commit of MotionQ backend with dwell and keyboard updates)
+    "tilt_threshold": 15.0
+  },
+  "dwell": {
+    "duration_ms": 800,
+    "entry_delay_ms": 300,
+    "stability_radius": 25
+  },
+  "lighting": {
+<<<<<<< HEAD
+    "brightness_offset": 31.931810416666707,
+=======
+    "brightness_offset": 15.582301851851838,
+>>>>>>> b2ba781 (Initial commit of MotionQ backend with dwell and keyboard updates)
+    "contrast_scale": 1.0
+  },
+  "language": "EN"
+}
